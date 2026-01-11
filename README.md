@@ -63,13 +63,13 @@ These are **intentional** omissions for the MVP.
 ## Installation
 
 ```bash
-go install github.com/your-org/grimleytk@latest
+go install github.com/MatheusPereiraSilva/grimleytk@latest
 ```
 
 Or clone and build locally:
 
 ```bash
-git clone https://github.com/your-org/grimleytk.git
+git clone https://github.com/MatheusPereiraSilva/grimleytk.git
 cd grimleytk
 go build
 ```
