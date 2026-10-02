@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"grimleytk/internal/config"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/config"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -14,7 +14,7 @@ import (
 var tableDescription string
 
 var createTableCmd = &cobra.Command{
-	Use:   "create table <domain>.<table_name>",
+	Use:   "table <domain>.<table_name>",
 	Short: "Create a table owned by a domain in the Grimley architecture file",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -53,6 +53,9 @@ var createTableCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if domain.Owns.Tables == nil {
+			domain.Owns.Tables = make(map[string]config.Table)
+		}
 		// Create table
 		domain.Owns.Tables[tableName] = config.Table{
 			Description: tableDescription,
@@ -80,5 +83,5 @@ var createTableCmd = &cobra.Command{
 func init() {
 	createTableCmd.Flags().StringVar(&tableDescription, "description", "", "Table description")
 
-	rootCmd.AddCommand(createTableCmd)
+	createCmd.AddCommand(createTableCmd)
 }

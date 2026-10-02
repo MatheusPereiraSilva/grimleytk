@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"grimleytk/internal/config"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/config"
 
 	"github.com/spf13/cobra"
 )
@@ -11,12 +11,11 @@ import (
 var showReadsCmd = &cobra.Command{
 	Use:   "reads",
 	Short: "Show read models (views)",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 
 		cfg, err := config.Load("grimley.yaml")
 		if err != nil {
-			fmt.Println(err)
-			return
+			return err
 		}
 
 		fmt.Println("Read Models:")
@@ -27,6 +26,7 @@ var showReadsCmd = &cobra.Command{
 				fmt.Printf("  Columns: %v\n\n", read.Columns)
 			}
 		}
+		return nil
 	},
 }
 

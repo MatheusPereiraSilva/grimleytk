@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"grimleytk/internal/config"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/config"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -17,7 +17,7 @@ var (
 )
 
 var createViewCmd = &cobra.Command{
-	Use:   "create view <domain>.<view_name>",
+	Use:   "view <domain>.<view_name>",
 	Short: "Create a read model (view) in the Grimley architecture file",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -61,7 +61,14 @@ var createViewCmd = &cobra.Command{
 			domain.Reads = make(map[string]config.Read)
 		}
 
-		// Create / overwrite view
+		if _, exists := domain.Reads[viewName]; exists {
+			fmt.Println("View already exists")
+			os.Exit(1)
+		}
+		for i := range cols {
+			cols[i] = strings.TrimSpace(cols[i])
+		}
+		// Create view
 		domain.Reads[viewName] = config.Read{
 			From:    fromRef,
 			Columns: cols,
@@ -92,5 +99,5 @@ func init() {
 	createViewCmd.Flags().StringVar(&fromRef, "from", "", "Source table (domain.table)")
 	createViewCmd.Flags().StringVar(&columns, "columns", "", "Comma-separated list of columns")
 
-	rootCmd.AddCommand(createViewCmd)
+	createCmd.AddCommand(createViewCmd)
 }

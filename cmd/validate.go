@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"grimleytk/internal/config"
-	"grimleytk/internal/validator"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/config"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/validator"
 
 	"github.com/spf13/cobra"
 )
@@ -21,12 +21,7 @@ var validateCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		var issues []validator.Issue
-
-		issues = append(issues, validator.ValidateStructural(cfg)...)
-		issues = append(issues, validator.ValidateReferences(cfg)...)
-		issues = append(issues, validator.ValidateArchitecture(cfg)...)
-		issues = append(issues, validator.ValidateSecurity(cfg)...)
+		issues := validator.Validate(cfg)
 
 		report := validator.BuildReport(issues)
 		fmt.Println(report.String())

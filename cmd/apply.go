@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"grimleytk/internal/config"
-	"grimleytk/internal/executor"
-	"grimleytk/internal/planner"
-	"grimleytk/internal/validator"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/config"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/executor"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/planner"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/validator"
 
 	"github.com/spf13/cobra"
 )
@@ -33,11 +33,7 @@ This operation modifies the database and requires confirmation.`,
 		}
 
 		// 2. Validate before apply
-		var issues []validator.Issue
-		issues = append(issues, validator.ValidateStructural(cfg)...)
-		issues = append(issues, validator.ValidateReferences(cfg)...)
-		issues = append(issues, validator.ValidateArchitecture(cfg)...)
-		issues = append(issues, validator.ValidateSecurity(cfg)...)
+		issues := validator.Validate(cfg)
 
 		report := validator.BuildReport(issues)
 		if report.HasErrors() {
@@ -46,14 +42,18 @@ This operation modifies the database and requires confirmation.`,
 		}
 
 		// 3. Build plan
-		actions := planner.BuildPlan(cfg)
+		actions, err := planner.BuildPlan(cfg)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 		if len(actions) == 0 {
 			fmt.Println("No actions to apply.")
 			return
 		}
 
 		// 4. Show plan
-		fmt.Println("Execution Plan:\n")
+		fmt.Println("Execution Plan:")
 		for i, action := range actions {
 			fmt.Printf("%d. %s\n", i+1, action.Description)
 			fmt.Println(action.SQL)
@@ -74,6 +74,8 @@ This operation modifies the database and requires confirmation.`,
 			fmt.Printf("Failed to initialize executor: %v\n", err)
 			os.Exit(1)
 		}
+
+		defer exec.Close()
 
 		// 7. Execute plan with context
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)

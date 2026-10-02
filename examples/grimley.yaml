@@ -1,0 +1,38 @@
+version: "0.1"
+project:
+  name: shop
+  environment: local
+database:
+  engine: postgres
+  host: localhost
+  port: 5432
+  name: shop
+  ssl: false
+  credentials:
+    user: postgres
+    password_env: DB_PASSWORD
+domains:
+  catalog:
+    schema: catalog
+    owner: catalog-service
+    owns:
+      tables:
+        products:
+          description: Main product table
+          columns:
+            id:
+              type: uuid
+              primary_key: true
+              nullable: false
+            price:
+              type: numeric
+              nullable: false
+  wishlist:
+    schema: wishlist
+    owner: wishlist-service
+    reads:
+      products_view:
+        from: catalog.products
+        columns: [id, price]
+        access:
+          mode: read-only

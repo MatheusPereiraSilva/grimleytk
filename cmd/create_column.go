@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"grimleytk/internal/config"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/config"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -19,7 +19,7 @@ var (
 )
 
 var createColumnCmd = &cobra.Command{
-	Use:   "create column <domain>.<table>.<column>",
+	Use:   "column <domain>.<table>.<column>",
 	Short: "Create a column in a table owned by a domain",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -69,6 +69,9 @@ var createColumnCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if table.Columns == nil {
+			table.Columns = make(map[string]config.Column)
+		}
 		// Create column
 		table.Columns[columnName] = config.Column{
 			Type:       columnType,
@@ -107,5 +110,5 @@ func init() {
 	createColumnCmd.Flags().BoolVar(&columnPrimaryKey, "primary-key", false, "Whether the column is a primary key")
 	createColumnCmd.Flags().BoolVar(&columnUnique, "unique", false, "Whether the column has a unique constraint")
 
-	rootCmd.AddCommand(createColumnCmd)
+	createCmd.AddCommand(createColumnCmd)
 }

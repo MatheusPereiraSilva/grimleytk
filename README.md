@@ -1,258 +1,123 @@
 # GrimleyTK
 
-GrimleyTK is an open-source **Declarative Data Architecture Toolkit** designed to help teams model, validate, plan, and apply database architectures with strong governance — **before** problems reach production.
+GrimleyTK is an initial MVP for declarative data architecture and governance.
+It supports **PostgreSQL only**. It is neither an ORM nor a migration framework.
 
-It focuses on **clarity, safety, and explicit ownership** of data in distributed and microservice-oriented systems.
+The CLI edits `grimley.yaml`, validates declarations, generates SQL without
+connecting to a database, and can execute that plan in one transaction.
+Ownership is declared per domain; cross-domain reads name explicit source columns.
 
-> GrimleyTK is not an ORM.
-> GrimleyTK is not a migration framework.
-> GrimleyTK is a **data-architecture governance tool**.
+## Build and install
 
----
+Requires Go 1.23 or newer. From the directory containing `go.mod`:
 
-## Why GrimleyTK exists
-
-Modern systems often suffer from:
-
-* Shared databases with unclear ownership
-* Services reading or mutating data they should not
-* Implicit contracts between teams
-* Architectural drift over time
-
-GrimleyTK solves this by introducing a **single declarative source of truth** (`grimley.yaml`) that defines:
-
-* Who owns which data
-* What can be read across domains
-* What is forbidden
-* What changes are required to reach the desired state
-
----
-
-## Core principles
-
-* **Explicit ownership**: every table has a single owning domain
-* **Read models are explicit**: cross-domain access is always declared
-* **Fail fast**: architectural violations are caught early
-* **Safe by default**: no destructive operations in MVP
-* **Tooling over convention**: rules are enforced, not assumed
-
----
-
-## What GrimleyTK does (MVP)
-
-✅ Declaratively define data architecture (`grimley.yaml`)
-✅ Validate architecture rules and security constraints
-✅ Generate an execution plan (dry-run SQL)
-✅ Apply changes safely using transactions
-✅ Provide a CLI-driven modeling workflow
-
----
-
-## What GrimleyTK does NOT do (yet)
-
-❌ No schema diffing against live databases
-❌ No destructive operations (DROP, DELETE)
-❌ No automatic rollback migrations
-❌ No CDC or replication
-❌ PostgreSQL only (for now)
-
-These are **intentional** omissions for the MVP.
-
----
-
-## Installation
-
-```bash
-go install github.com/MatheusPereiraSilva/grimleytk@latest
+```sh
+go mod tidy
+go build -o bin/grimleytk .
+go install .
 ```
 
-Or clone and build locally:
+`go install .` installs into `GOBIN` (or `$(go env GOPATH)/bin` by default).
+Add that directory to PATH to use the commands below. Alternatively, use the
+absolute path to `bin/grimleytk`. In this checkout, the module is in `grimleytk/`;
+after cloning, enter the directory containing `go.mod` before building.
+These instructions install the local source and do not require a published release.
 
-```bash
-git clone https://github.com/MatheusPereiraSilva/grimleytk.git
-cd grimleytk
-go build
-```
+## Workflow without a database
 
----
+Run in a new working directory:
 
-## Getting started
-
-### 1. Initialize a project
-
-```bash
+```sh
 grimleytk init
-```
-
-This creates a starter `grimley.yaml`.
-
----
-
-### 2. Create a domain
-
-```bash
-grimleytk create domain catalog \
-  --schema catalog \
-  --owner catalog-service
-```
-
----
-
-### 3. Create a table
-
-```bash
-grimleytk create table catalog.products \
-  --description "Main product table"
-```
-
----
-
-### 4. Add columns
-
-```bash
-grimleytk create column catalog.products.id \
-  --type uuid \
-  --primary-key \
-  --nullable false
-
-grimleytk create column catalog.products.price \
-  --type numeric \
-  --nullable false
-```
-
----
-
-### 5. Create a read model (view)
-
-```bash
-grimleytk create view wishlist.products_view \
-  --from catalog.products \
-  --columns id,price
-```
-
----
-
-### 6. Validate architecture
-
-```bash
+grimleytk create domain catalog --schema catalog --owner catalog-service
+grimleytk create table catalog.products --description "Main product table"
+grimleytk create column catalog.products.id --type uuid --primary-key --nullable=false
+grimleytk create column catalog.products.price --type numeric --nullable=false
+grimleytk create domain wishlist --schema wishlist --owner wishlist-service
+grimleytk create view wishlist.products_view --from catalog.products --columns id,price
 grimleytk validate
-```
-
-This checks:
-
-* structural correctness
-* cross-domain references
-* architectural ownership rules
-* sensitive data exposure
-
----
-
-### 7. Preview execution plan
-
-```bash
 grimleytk plan
+grimleytk show
+grimleytk show domains
+grimleytk show tables
+grimleytk show reads
 ```
 
-This prints the SQL **without executing anything**.
+`init` creates a valid starter domain named `example` and refuses to overwrite
+an existing file. Creation commands edit YAML only; `validate`, `plan` and
+`apply` check the completed declaration. Tables need at least one column.
+`examples/grimley.yaml` is a complete two-domain example. A domain that only
+reads emits a nonblocking warning.
 
----
+## Apply
 
-### 8. Apply changes
+Create the PostgreSQL database separately, configure its connection in YAML,
+and set the environment variable named by `database.credentials.password_env`.
+Passwords are read from the environment; the username is stored in YAML.
 
-```bash
-grimleytk apply
+```sh
+export DB_PASSWORD='your-local-password'
+grimleytk apply                 # displays SQL and asks for yes/no
+grimleytk apply --auto-approve  # skips confirmation
 ```
 
-You will be asked for confirmation.
+Apply executes the plan in one transaction and rolls back that transaction on
+statement failure. This is not automatic rollback migration support. `ssl: true`
+uses lib/pq's `require` mode; configure your database/network appropriately.
 
-For CI/CD:
+## Safety and current limitations
 
-```bash
-grimleytk apply --auto-approve
+- No DROP, DELETE, data updates, column type changes or constraint removal are generated.
+- Names must match `[a-z_][a-z0-9_]{0,62}` and are quoted in SQL. SQL types use
+  a fixed allowlist: uuid, text, boolean/bool, smallint, integer/int, bigint,
+  real, double precision, numeric/decimal, date, time, timestamp (with or
+  without time zone), timestamptz, json/jsonb, bytea, varchar/character varying,
+  and one-dimensional arrays of these. Custom types, defaults, SQL expressions
+  and parameterized types are unsupported.
+- Plans have deterministic ordering. Schemas, tables and columns use
+  `IF NOT EXISTS`. Primary keys (including composite keys, ordered by column
+  name) are defined only when a table is first created. Existing tables can
+  receive missing columns, but existing column definitions and constraints
+  are not reconciled. Adding NOT NULL or UNIQUE columns may fail on populated
+  tables; the transaction then rolls back. Plan output is not a live schema diff.
+- Views are created after source tables, only if no relation with that name
+  exists. Existing views are not replaced or reconciled. Concurrent applies
+  are not coordinated; use one apply process at a time.
+- Ownership and read-only access are declaration checks, not database grants.
+  PostgreSQL views may be updatable; manage actual database privileges separately.
+  Sensitive-column blocking is a name-based heuristic, not data classification.
+- Unknown YAML fields and multiple documents are rejected. Reserved schema fields
+  for indexes, policies, documentation, domain databases, access grants, sync,
+  materialized views and consistency modes are rejected as unsupported.
+- No live schema diffing, drift detection, automatic rollback migrations, CDC,
+  replication, multiple databases, RLS generation or evolution validation.
+
+## Code layout and checks
+
+```text
+main.go
+cmd/                  CLI orchestration
+internal/config/      YAML structs and strict loader
+internal/validator/   structure, references, ownership and security
+internal/planner/     validated PostgreSQL SQL generation
+internal/executor/    transactional execution
+examples/grimley.yaml
 ```
 
----
-
-## Architecture overview
-
-```
-cmd/            # CLI commands (interface layer)
-internal/
-  config/       # YAML schema & loader
-  validator/    # Architectural & security rules
-  planner/      # SQL plan generation (dry-run)
-  executor/     # Safe execution (transactions)
-```
-
-* `cmd/` orchestrates behavior
-* `internal/` contains all business logic
-* Planner and executor are strictly separated
-
----
-
-## Security model
-
-* No credentials stored in files
-* Database passwords are read from environment variables
-* Cross-domain access is read-only by default
-* Sensitive column names are blocked in read models
-
----
-
-## Testing
-
-Run all tests with:
-
-```bash
+```sh
+gofmt -w main.go cmd internal
+go mod tidy
 go test ./...
+go vet ./...
+go build ./...
 ```
 
-The project uses **pure unit tests** for:
+Run the repeatable CLI smoke test with an absolute binary path:
 
-* validators
-* planners
+```sh
+go build -o /tmp/grimleytk-cli .
+sh scripts/smoke.sh /tmp/grimleytk-cli
+```
 
-No database is required for tests.
-
----
-
-## Roadmap (high level)
-
-* Diff-based planning
-* Schema drift detection
-* Destructive operations (explicit & safe)
-* RLS and permission generation
-* Multiple database engines
-* Visual architecture output
-
----
-
-## Philosophy
-
-GrimleyTK treats data architecture as **code, contracts, and governance**, not just schemas.
-
-It is designed for teams that care about:
-
-* long-term maintainability
-* clear ownership
-* safe evolution
-
----
-
-## License
-
-MIT License.
-
----
-
-## Contributing
-
-Contributions are welcome.
-
-If you are interested in:
-
-* architecture tooling
-* distributed systems
-* data governance
-
-You are in the right place.
+Unit and CLI tests require no database. SQL execution against PostgreSQL is not
+covered by these tests. MIT license; see `LICENSE`.

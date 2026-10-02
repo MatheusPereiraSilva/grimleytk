@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"grimleytk/internal/config"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/config"
 
 	"github.com/spf13/cobra"
 )
@@ -11,18 +11,17 @@ import (
 var showDomainsCmd = &cobra.Command{
 	Use:   "domains",
 	Short: "Show defined domains",
-	Run:   showDomains,
+	RunE:  showDomains,
 }
 
 func init() {
 	showCmd.AddCommand(showDomainsCmd)
 }
 
-func showDomains(cmd *cobra.Command, args []string) {
+func showDomains(cmd *cobra.Command, args []string) error {
 	cfg, err := config.Load("grimley.yaml")
 	if err != nil {
-		fmt.Println(err)
-		return
+		return err
 	}
 
 	fmt.Println("Domains:")
@@ -45,4 +44,5 @@ func showDomains(cmd *cobra.Command, args []string) {
 
 		fmt.Println()
 	}
+	return nil
 }

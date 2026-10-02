@@ -1,6 +1,6 @@
 package main
 
-import "grimleytk/cmd"
+import "github.com/MatheusPereiraSilva/grimleytk/cmd"
 
 func main() {
 	cmd.Execute()

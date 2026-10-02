@@ -1,0 +1,19 @@
+# Go outputs
+/bin/
+/dist/
+/grimleytk
+*.exe
+*.test
+*.out
+coverage*.txt
+coverage*.html
+# Local settings and temporary files
+.env
+.env.*
+!.env.example
+*.tmp
+*.swp
+*~
+.DS_Store
+.idea/
+.vscode/

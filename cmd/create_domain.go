@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"grimleytk/internal/config"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/config"
 
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -17,7 +17,7 @@ var (
 )
 
 var createDomainCmd = &cobra.Command{
-	Use:   "create domain <domain_name>",
+	Use:   "domain <domain_name>",
 	Short: "Create a new domain in the Grimley architecture file",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -46,6 +46,9 @@ var createDomainCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		if cfg.Domains == nil {
+			cfg.Domains = make(map[string]config.Domain)
+		}
 		// Create domain
 		cfg.Domains[domainName] = config.Domain{
 			Description: domainDescription,
@@ -78,5 +81,5 @@ func init() {
 	createDomainCmd.Flags().StringVar(&domainOwner, "owner", "", "Owning service or team")
 	createDomainCmd.Flags().StringVar(&domainDescription, "description", "", "Domain description")
 
-	rootCmd.AddCommand(createDomainCmd)
+	createCmd.AddCommand(createDomainCmd)
 }

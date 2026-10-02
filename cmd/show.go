@@ -8,9 +8,9 @@ var showCmd = &cobra.Command{
 	Use:   "show",
 	Short: "Show GrimleyTK architecture information",
 	Long:  "Display different views of the declared data architecture.",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		// Default behavior: show domains
-		showDomains(cmd, args)
+		return showDomains(cmd, args)
 	},
 }
 

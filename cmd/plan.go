@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
-	"grimleytk/internal/config"
-	"grimleytk/internal/planner"
-	"grimleytk/internal/validator"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/config"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/planner"
+	"github.com/MatheusPereiraSilva/grimleytk/internal/validator"
 
 	"github.com/spf13/cobra"
 )
@@ -26,11 +26,7 @@ the declared architecture. No SQL is executed.`,
 		}
 
 		// 2. Validate architecture before planning
-		var issues []validator.Issue
-		issues = append(issues, validator.ValidateStructural(cfg)...)
-		issues = append(issues, validator.ValidateReferences(cfg)...)
-		issues = append(issues, validator.ValidateArchitecture(cfg)...)
-		issues = append(issues, validator.ValidateSecurity(cfg)...)
+		issues := validator.Validate(cfg)
 
 		report := validator.BuildReport(issues)
 		if report.HasErrors() {
@@ -39,7 +35,11 @@ the declared architecture. No SQL is executed.`,
 		}
 
 		// 3. Build plan
-		actions := planner.BuildPlan(cfg)
+		actions, err := planner.BuildPlan(cfg)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
 
 		if len(actions) == 0 {
 			fmt.Println("No actions to perform.")
@@ -47,7 +47,7 @@ the declared architecture. No SQL is executed.`,
 		}
 
 		// 4. Print plan
-		fmt.Println("Execution Plan:\n")
+		fmt.Println("Execution Plan:")
 
 		for i, action := range actions {
 			fmt.Printf("%d. %s\n", i+1, action.Description)

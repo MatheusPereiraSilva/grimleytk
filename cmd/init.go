@@ -21,7 +21,7 @@ var initCmd = &cobra.Command{
 		}
 
 		// 2. Create the file
-		file, err := os.Create(defaultConfigFile)
+		file, err := os.OpenFile(defaultConfigFile, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
 		if err != nil {
 			fmt.Printf("Failed to create %s: %v\n", defaultConfigFile, err)
 			os.Exit(1)
