@@ -23,6 +23,10 @@ var applyCmd = &cobra.Command{
 	Short: "Apply the planned database changes",
 	Long: `Apply executes the SQL generated from the GrimleyTK plan.
 This operation modifies the database and requires confirmation.`,
+	Args: cobra.NoArgs,
+	Example: `  # Run from the directory containing grimley.yaml:
+  grimleytk apply
+  grimleytk apply --auto-approve`,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// 1. Load config

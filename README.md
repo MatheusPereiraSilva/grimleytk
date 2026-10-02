@@ -51,6 +51,12 @@ reads emits a nonblocking warning.
 
 ## Apply
 
+All commands read `grimley.yaml` from the current working directory. There is
+no `--file`, `--config`, or positional file argument. To select a declaration,
+place it in its own directory as `grimley.yaml`, enter that directory, and run
+`grimleytk apply [--auto-approve]` using the installed executable or an absolute
+path to the built `bin/grimleytk`.
+
 Create the PostgreSQL database separately, configure its connection in YAML,
 and set the environment variable named by `database.credentials.password_env`.
 Passwords are read from the environment; the username is stored in YAML.
@@ -119,5 +125,16 @@ go build -o /tmp/grimleytk-cli .
 sh scripts/smoke.sh /tmp/grimleytk-cli
 ```
 
-Unit and CLI tests require no database. SQL execution against PostgreSQL is not
-covered by these tests. MIT license; see `LICENSE`.
+Unit and CLI help tests require no database and build and invoke the public
+`grimleytk` executable. The optional integration test also invokes that executable
+and checks the resulting table and view. Use a disposable local PostgreSQL
+database named `grimleytk_test`, with user `postgres` and SSL disabled:
+
+```sh
+GRIMLEYTK_TEST_POSTGRES_PORT=55432 \
+GRIMLEYTK_TEST_POSTGRES_PASSWORD=local-test-password \
+go test -v -run TestCLIApplyPostgres .
+```
+
+Without `GRIMLEYTK_TEST_POSTGRES_PORT`, this integration test is skipped.
+MIT license; see `LICENSE`.
